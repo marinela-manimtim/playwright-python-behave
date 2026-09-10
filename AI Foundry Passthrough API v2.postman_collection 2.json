@@ -1,0 +1,3145 @@
+{
+  "info": {
+    "_postman_id": "6e2cc524-36df-4297-b6bf-c277bd9dc678",
+    "name": "AI Foundry Passthrough API v2",
+    "description": "Full API surface for the AI Foundry Passthrough module — every endpoint, organised for QA testing.\n\nRequired headers on every request:\n  Authorization: Bearer {{bearerToken}}\n  x-kpmg-charge-code: {{chargeCode}}\n  x-kpmg-region-override: australiaeast\n\nAuth flow:\n  OAuth 2.0 Implicit — authenticate via Authentication → Generate OAuth2 Token, then set bearerToken variable.\n\nID chaining:\n  Many requests auto-capture returned IDs into collection variables (agentId, threadId, runId, messageId, fileId, vectorStoreId, projectAuthName) so downstream requests work without manual copy-paste. Run requests in folder order for the best experience.\n\nEnvironments:\n  Switch baseUrl and projectId variables to target DV / QA / UAT / PROD.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "37099285"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Generate OAuth2 Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// After authorising, copy the token from the Authorization tab and set it here:",
+                  "// Collection → Variables → bearerToken",
+                  "const token = pm.response.headers.get('Authorization') || '';",
+                  "if (token.startsWith('Bearer ')) {",
+                  "    pm.collectionVariables.set('bearerToken', token.substring(7));",
+                  "    console.log('bearerToken captured from response header.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "authUrl",
+                  "value": "https://login.microsoftonline.com/{{tenantId}}/oauth2/v2.0/authorize",
+                  "type": "string"
+                },
+                {
+                  "key": "clientId",
+                  "value": "{{clientId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "scope",
+                  "value": "api://{{clientId}}/user_impersonation",
+                  "type": "string"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "implicit",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenName",
+                  "value": "FoundryToken",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                },
+                {
+                  "key": "useBrowser",
+                  "value": true,
+                  "type": "boolean"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Use the Authorization tab on this request to run the OAuth 2.0 Implicit flow:\n  1. Click the **Authorization** tab\n  2. Type = **OAuth 2.0**\n  3. Click **Get New Access Token**\n  4. Sign in with KPMG credentials\n  5. Click **Use Token**\n  6. Copy the `access_token` value\n  7. Paste it into the `bearerToken` collection variable (Collection → Variables tab)\n\nToken lifetime: ~1 hour. Repeat when you see 401 responses.\n\n**Scope:** `api://{{clientId}}/user_impersonation` (delegated / user-impersonation)\n**Audience:** `https://ai.azure.com`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Generate an OAuth 2.0 Bearer token and set the bearerToken collection variable before running any other request."
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "List Agents",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var count = json.data ? json.data.length : (Array.isArray(json) ? json.length : '?');",
+                  "        pm.test(`Agent count: ${count}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Returns a list of all assistants in the specified project.\n\nOperation ID: `List_Agents`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('agentId', body.id);",
+                  "        console.log('agentId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"gpt-4-1-2025-04-14-gs-ae\",\n  \"name\": \"My Assistant for Demo\",\n  \"instructions\": \"You are a helpful assistant\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates a new assistant in the specified project. Requires `CreateAgent` permission in ProjectAuthorization (or ProjectOwner role).\n\nOperation ID: `Create_Agent`\n\nCaptured: `agentId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Agent (with AI Search Tool)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        if (json.id) {",
+                  "            pm.collectionVariables.set('agentId', json.id);",
+                  "            pm.test(`agentId captured: ${json.id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"model\": \"gpt-4o-2024-11-20-std-ae\",\n    \"name\": \"Testing Agent with AI Search\",\n    \"instructions\": \"You are a helpful assistant with access to an AI Search index. If a user asks anything about files, documents, file names, file paths, or file contents, always call the azure_ai_search tool before answering.\",\n    \"AgentOwner\": \"go-cld-sulagnabehera@kpmgqa.com\",\n    \"tools\": [\n        {\n            \"type\": \"azure_ai_search\",\n            \"azure_ai_search\": {\n                \"indexes\": [\n                    {\n                        \"index_name\": \"{{indexName}}\",\n                        \"project_connection_id\": \"/subscriptions/505f6e9b-691e-4732-bc6c-17b79f8e7be4/resourceGroups/rgp-aif-wb-apac-aue-qa/providers/Microsoft.CognitiveServices/accounts/aif-wb-apac-aue-qa/projects/aif-prj-wb-apac-aue-qa/connections/aif-prj-wb-apac-aue-qa-aisearch-aif-prj-wb-apac-aue-qa\",\n                        \"query_type\": \"vector_simple_hybrid\",\n                        \"top_k\": 5\n                    }\n                ]\n            }\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates an agent with an Azure AI Search tool. Triggers the ai_search_index_check policy fragment — validates indexName + projectConnectionId, checks caller is AgentOwner, writes rows to AgentSearchIndexMapping.\n\nReturns 409 if the index or agent is already mapped.\n\nAuto-captures: `agentId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants/{{agentId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants",
+                "{{agentId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves details for a specific assistant.\n\nOperation ID: `Get_Agent`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"gpt-4-1-2025-04-14-gs-ae\",\n  \"name\": \"My Assistant_Modified\",\n  \"instructions\": \"You are a helpful assistant\",\n  \"tools\": [\n        {\n            \"type\": \"bing_grounding\",\n            \"bing_grounding\": {\n                \"search_configurations\": [\n                    {\n                        \"connection_id\": \"/subscriptions/505f6e9b-691e-4732-bc6c-17b79f8e7be4/resourceGroups/rgp-aif-wb-apac-aue-dv/providers/Microsoft.CognitiveServices/accounts/aif-wb-apac-aue-dv/projects/aif-prj-wb-apac-aue-dv/connections/bingaifprjwbapacauedv\",\n                        \"market\": \"en-us\",\n                        \"set_lang\": \"en\",\n                        \"count\": 5\n                    }\n                ]\n            }\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants/{{agentId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants",
+                "{{agentId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates an existing assistant's configuration.\n\nOperation ID: `Modify_Agent`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Agent (Update AI Search Tool)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"model\": \"gpt-4o-2024-11-20-std-ae\",\n    \"name\": \"Modifying Agent with AI Search for 5060\",\n    \"instructions\": \"You are a helpful assistant with access to an AI Search index. If a user asks anything about files, documents, file names, file paths, or file contents, always call the azure_ai_search tool before answering.\",\n    \"AgentOwner\": \"go-cld-sulagnabehera@kpmgqa.com\",\n    \"tools\": [\n        {\n            \"type\": \"azure_ai_search\",\n            \"azure_ai_search\": {\n                \"indexes\": [\n                    {\n                        \"index_name\": \"{{indexName}}\",\n                        \"project_connection_id\": \"/subscriptions/505f6e9b-691e-4732-bc6c-17b79f8e7be4/resourceGroups/rgp-aif-wb-apac-aue-qa/providers/Microsoft.CognitiveServices/accounts/aif-wb-apac-aue-qa/projects/aif-prj-wb-apac-aue-qa/connections/aif-prj-wb-apac-aue-qa-aisearch-aif-prj-wb-apac-aue-qa\",\n                        \"query_type\": \"vector_simple_hybrid\",\n                        \"top_k\": 5\n                    }\n                ]\n            }\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants/{{agentId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants",
+                "{{agentId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates an agent's AI Search tool. The ai_search_index_check policy validates the payload, updates AgentSearchIndexMapping rows, and enforces ownership (AgentOwner must match caller).\n\nReturns 409 on index/agent conflict."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Agent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/assistants/{{agentId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "assistants",
+                "{{agentId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Deletes an assistant. Expects HTTP 204 on success.\n\nOperation ID: `Delete_Agent`"
+          },
+          "response": []
+        }
+      ],
+      "description": "CRUD operations for Azure AI Foundry assistants (agents) within a project.\nPolicy enforces ProjectAuthorization membership and CreateAgent permission."
+    },
+    {
+      "name": "Threads",
+      "item": [
+        {
+          "name": "Create Thread",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('threadId', body.id);",
+                  "        console.log('threadId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "{{chargeCode}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "{{regionOverride}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assistant_id\" : \"asst_8ZpWLmPLbdWJHXX5i8S8nHIi\",\n  \"messages\": [\n    {\n        \"role\" : \"user\",\n        \"content\" :\"Hi Buddy..!!Whats up?\"\n    }\n   ],\n  \"metadata\": {\n    \"qa-purpose\": \"automated-test\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates a new conversation thread. Optionally pass initial messages.\n\nOperation ID: `Create_Thread`\n\nCaptured: `threadId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Thread",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves a thread by its ID.\n\nOperation ID: `Get_Thread`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Thread",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"qa-purpose\": \"automated-test\",\n    \"updated\": \"true\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates thread metadata.\n\nOperation ID: `Modify_Thread`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Thread",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Deletes a thread and all its messages. Expects HTTP 204.\n\nOperation ID: `Delete_Thread`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Conversation thread lifecycle operations.\nThreads are project-scoped and can hold multiple messages and runs."
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "List Messages",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var msgs = json.data || [];",
+                  "        pm.test(`Message count: ${msgs.length}`, () => true);",
+                  "        if (msgs.length > 0 && msgs[0].id) {",
+                  "            pm.collectionVariables.set('messageId', msgs[0].id);",
+                  "            pm.test(`messageId captured: ${msgs[0].id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              },
+              {
+                "key": "x-assistant-id",
+                "value": "asst_8ZpWLmPLbdWJHXX5i8S8nHIi",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/messages?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lists all messages in a thread. Supports `limit` and `order` (asc/desc) query parameters.\n\nOperation ID: `List_Messages`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('messageId', body.id);",
+                  "        console.log('messageId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-assistant-id",
+                "value": "asst_8ZpWLmPLbdWJHXX5i8S8nHIi",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"user\",\n  \"content\": \"Tell me the ADF key components and short description on it.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/messages?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Adds a message to a thread. Role must be `user` when adding via API.\n\nOperation ID: `Create_Message`\n\nCaptured: `messageId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-assistant-id",
+                "value": "asst_ae3nRChWSVoQmecGK9GMfZ3x",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/messages/{{messageId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "messages",
+                "{{messageId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves a specific message.\n\nOperation ID: `Get_Message`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Message",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"qa-updated\": \"true\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/messages/{{messageId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "messages",
+                "{{messageId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates message metadata.\n\nOperation ID: `Modify_Message`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Message operations within a conversation thread."
+    },
+    {
+      "name": "Runs",
+      "item": [
+        {
+          "name": "List Runs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var runs = json.data || [];",
+                  "        pm.test(`Run count: ${runs.length}`, () => true);",
+                  "        if (runs.length > 0 && runs[0].id) {",
+                  "            pm.collectionVariables.set('runId', runs[0].id);",
+                  "            pm.test(`runId captured from list: ${runs[0].id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              },
+              {
+                "key": "x-assistant-id",
+                "value": "asst_ae3nRChWSVoQmecGK9GMfZ3x",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs?api-version={{apiVersion}}&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists all runs within a thread.\n\nOperation ID: `List_Runs`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('runId', body.id);",
+                  "        console.log('runId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "{{chargeCode}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "{{regionOverride}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assistant_id\": \"asst_8ZpWLmPLbdWJHXX5i8S8nHIi\",\n  \"instructions\": \"Creating run\",\n  \"metadata\": {\n    \"qa-purpose\": \"automated-test\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates and starts a run. The run will begin processing the thread's messages with the specified assistant.\n\nOperation ID: `Create_Run`\n\nCaptured: `runId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Run (Streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream",
+                "description": "Required for SSE streaming responses"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assistant_id\": \"asst_qsiCkUHlnIWt8cGPEGkNsuvb\",\n  \"stream\": true,\n  \"instructions\": null,\n  \"tools\": [],\n  \"metadata\": {\n    \"qa-purpose\": \"streaming-test\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs?api-version={{apiVersion}}&stream=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                },
+                {
+                  "key": "stream",
+                  "value": "true",
+                  "description": "Enables Server-Sent Events streaming"
+                }
+              ]
+            },
+            "description": "Creates a streaming run. Response is Server-Sent Events (SSE). Note: Postman will buffer the full SSE stream before displaying the response.\n\nOperation ID: `Create_Run` (with stream=true)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        pm.test(`Run status: ${json.status}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "{{chargeCode}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "{{regionOverride}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-config-group",
+                "value": "97dbda91-bc6a-4b4f-85ec-57b85bfeb420",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves the status and details of a run. Poll this to track run completion.\n\nStatus values: `queued`, `in_progress`, `requires_action`, `cancelling`, `cancelled`, `failed`, `completed`, `expired`\n\nOperation ID: `Get_Run`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"qa-updated\": \"true\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates run metadata.\n\nOperation ID: `Modify_Run`"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var s = pm.response.json().status;",
+                  "        pm.test('Run cancelling or cancelled', () => pm.expect(['cancelling','cancelled']).to.include(s));",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}/cancel?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}",
+                "cancel"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Cancels an in-progress run. Only works when the run is in `in_progress` or `queued` status.\n\nOperation ID: `Cancel_Run`"
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Tool Outputs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tool_outputs\": [\n    {\n      \"tool_call_id\": \"{{toolCallId}}\",\n      \"output\": \"The result of the tool call goes here.\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}/submit_tool_outputs?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}",
+                "submit_tool_outputs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Submits tool call outputs back to a run that is in `requires_action` status. Set `toolCallId` from the `required_action.submit_tool_outputs.tool_calls[*].id` in the Get Run response.\n\nOperation ID: `Submit_Tool_Outputs_To_Run`"
+          },
+          "response": []
+        },
+        {
+          "name": "List Run Steps",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var steps = json.data || [];",
+                  "        pm.test(`Step count: ${steps.length}`, () => true);",
+                  "        if (steps.length > 0 && steps[0].id) {",
+                  "            pm.collectionVariables.set('stepId', steps[0].id);",
+                  "            pm.test(`stepId captured: ${steps[0].id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}/steps?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}",
+                "steps"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Lists all execution steps in a run. Use the returned step IDs to populate `stepId`.\n\nOperation ID: `List_Run_Steps`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Run Step",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/{{threadId}}/runs/{{runId}}/steps/{{stepId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "{{threadId}}",
+                "runs",
+                "{{runId}}",
+                "steps",
+                "{{stepId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves details for a specific run step.\n\nOperation ID: `Get_Run_Step`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Run lifecycle and step operations for executing an agent on a thread.\nStreaming runs use Server-Sent Events (SSE) — add `stream=true` query parameter."
+    },
+    {
+      "name": "Thread and Run (Combined)",
+      "item": [
+        {
+          "name": "Create Thread and Run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.thread_id) {",
+                  "        pm.collectionVariables.set('threadId', body.thread_id);",
+                  "        console.log('threadId set to:', body.thread_id);",
+                  "    }",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('runId', body.id);",
+                  "        console.log('runId set to:', body.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assistant_id\": \"{{agentId}}\",\n  \"thread\": {\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": \"Hello, please help me with a combined thread-and-run test.\"\n      }\n    ],\n    \"metadata\": {\n      \"qa-purpose\": \"automated-test\"\n    }\n  },\n  \"metadata\": {\n    \"qa-purpose\": \"combined-run-test\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/runs?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates a new thread from the provided messages and immediately starts a run against it.\n\nOperation ID: `Create_Thread_And_Run`\n\nCaptured: `threadId` (from `thread_id`), `runId` (from `id`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Thread and Run (Streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assistant_id\": \"{{agentId}}\",\n  \"stream\": true,\n  \"thread\": {\n    \"messages\": [\n      {\n        \"role\": \"user\",\n        \"content\": \"Hello, streaming test!\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/threads/runs?api-version={{apiVersion}}&stream=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "threads",
+                "runs"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                },
+                {
+                  "key": "stream",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Creates a thread and run with SSE streaming enabled.\n\nOperation ID: `Create_Thread_And_Run` (with stream=true)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Creates a thread and immediately starts a run in a single API call.\nSupports streaming via `stream=true`."
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "List Files",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var files = json.data || [];",
+                  "        pm.test(`File count: ${files.length}`, () => true);",
+                  "        if (files.length > 0 && files[0].id) {",
+                  "            pm.collectionVariables.set('fileId', files[0].id);",
+                  "            pm.test(`fileId captured from list: ${files[0].id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/files?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "files"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                },
+                {
+                  "key": "purpose",
+                  "value": "",
+                  "description": "Filter by purpose (e.g. assistants, fine-tune). Leave blank for all.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lists all files in the project. Optionally filter by `purpose`.\n\nOperation ID: `List_Files`"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('fileId', body.id);",
+                  "        console.log('fileId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Select a file to upload (text, PDF, etc.)",
+                  "src": "/C:/Users/sulagnabehera/OneDrive - KPMG/Workbench/AI Transalator/AI Translator Files/wordfile.docx"
+                },
+                {
+                  "key": "purpose",
+                  "value": "assistants",
+                  "type": "text",
+                  "description": "Purpose of the file. Use 'assistants' for agent retrieval."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/files?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "files"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Uploads a file as multipart/form-data. Select the file using the Body → form-data tab.\n\nOperation ID: `Upload_File`\n\nCaptured: `fileId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/files/{{fileId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "files",
+                "{{fileId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves file metadata by ID.\n\nOperation ID: `Get_File`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get File Content",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/files/{{fileId}}/content?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "files",
+                "{{fileId}}",
+                "content"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Downloads the raw content of a file.\n\nOperation ID: `Get_File_Content`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete File",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/files/{{fileId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "files",
+                "{{fileId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Deletes a file. Expects HTTP 204.\n\nOperation ID: `Delete_File`"
+          },
+          "response": []
+        }
+      ],
+      "description": "File upload and management for use with agents (e.g., as retrieval sources or code interpreter inputs)."
+    },
+    {
+      "name": "Vector Stores",
+      "item": [
+        {
+          "name": "List Vector Stores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var stores = json.data || [];",
+                  "        pm.test(`Vector store count: ${stores.length}`, () => true);",
+                  "        if (stores.length > 0 && stores[0].id) {",
+                  "            pm.collectionVariables.set('vectorStoreId', stores[0].id);",
+                  "            pm.test(`vectorStoreId captured: ${stores[0].id}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/vector_stores?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "vector_stores"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Lists all vector stores in the project.\n\nOperation ID: `List_Vector_Stores`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vector Store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.id) {",
+                  "        pm.collectionVariables.set('vectorStoreId', body.id);",
+                  "        console.log('vectorStoreId set to:', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vector for 5119 without fileid\",\n  //\"file_ids\": [\"assistant-EzGDy11BLeSRCaQ46kc9bk\"],\n  \"metadata\": {\n    \"qa-updated\": \"Create vector without fileid for 5119\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/vector_stores?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "vector_stores"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Creates a new vector store. Optionally pass `file_ids` to attach files immediately.\n\nOperation ID: `Create_Vector_Store`\n\nCaptured: `vectorStoreId`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Vector Store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/vector_stores/{{vectorStoreId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "vector_stores",
+                "{{vectorStoreId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Retrieves a vector store by ID.\n\nOperation ID: `Get_Vector_Store`"
+          },
+          "response": []
+        },
+        {
+          "name": "Modify Vector Store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Modified Vector for 5119 without fileid\",\n  //\"file_ids\": [\"assistant-EzGDy11BLeSRCaQ46kc9bk\"],\n  \"metadata\": {\n    \"qa-updated\": \"Modified vector without fileid for 5119\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/vector_stores/{{vectorStoreId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "vector_stores",
+                "{{vectorStoreId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Updates a vector store's name or metadata.\n\nOperation ID: `Modify_Vector_Store`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Vector Store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/vector_stores/{{vectorStoreId}}?api-version={{apiVersion}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "vector_stores",
+                "{{vectorStoreId}}"
+              ],
+              "query": [
+                {
+                  "key": "api-version",
+                  "value": "{{apiVersion}}"
+                }
+              ]
+            },
+            "description": "Deletes a vector store. Expects HTTP 204.\n\nOperation ID: `Delete_Vector_Store`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Vector store management for semantic search / file retrieval tool."
+    },
+    {
+      "name": "Project Authorizations (Admin)",
+      "item": [
+        {
+          "name": "List Project Authorizations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var records = json.value || json.data || (Array.isArray(json) ? json : []);",
+                  "        pm.test(`Record count: ${records.length}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "{{chargeCode}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "{{regionOverride}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/project-authorizations?projectId={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "project-authorizations"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "Returns all project authorization records for the project. Caller must be the Project Owner.\n\nOperation ID: `List_Project_Authorizations`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Project Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        if (json.Name) {",
+                  "            pm.collectionVariables.set('projectAuthName', json.Name);",
+                  "            pm.test(`projectAuthName captured: ${json.Name}`, () => true);",
+                  "        }",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ProjectID\": \"aif-prj-wb-apac-aue-qa\",\n  \"ProjectName\": \"AI Foundry Workbench QA\",\n  \"ProjectStatus\": \"Active\",\n  \"ProjectOwner\": \"go-cld-sulagnabehera@kpmgqa.com\",\n  \"SecurityGroupName\": \"97dbda91-bc6a-4b4f-85ec-57b85bfeb420\",\n  \"ModelName\": \"gpt-4-1-2025-04-14-gs-ae\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/project-authorizations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "project-authorizations"
+              ]
+            },
+            "description": "Creates a new ProjectAuthorization record.\n\nRequired: ProjectID, ProjectName, ProjectStatus (Active|Inactive), ProjectOwner\n\nOptional (mutually exclusive): User, SecurityGroupName\n\nOptional: ModelName (semicolon-separated), CreateAgent (Yes|No)\n\nAuto-captures: `projectAuthName` from response.Name"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Project Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"User\": \"go-cld-samundic@kpmgqa.com\",\n  \"CreateAgent\" : \"Yes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/project-authorizations/{{projectAuthName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "project-authorizations",
+                "{{projectAuthName}}"
+              ]
+            },
+            "description": "Updates an existing ProjectAuthorization record.\n\nMutable: ProjectStatus (Active|Inactive), ProjectName, ModelName, CreateAgent (Yes|No)\n\nImmutable (returns 400 if included): Name, ProjectID, CreatedBy, CreatedDate, ProjectOwner\n\nOperation ID: `Update_Project_Authorization`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Project Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "1",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "australiaeast",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/project-authorizations/{{projectAuthName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "project-authorizations",
+                "{{projectAuthName}}"
+              ]
+            },
+            "description": "Deletes a project authorization record. Expects HTTP 204.\n\nOperation ID: `Delete_Project_Authorization`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Manage project authorization records that control which users/service principals have access to a Foundry project.\n\n**Restricted to Project Owners only** (GET/PATCH/DELETE of existing records).\nThe `x-kpmg-charge-code` header must match a configured Foundry service.\n\nRequired fields for Create: `ProjectID`, `ProjectName`\nRecord name format: `WB-FOUNDRY-{sequence}` (e.g. `WB-FOUNDRY-0001`)"
+    },
+    {
+      "name": "Agent Authorizations (Admin)",
+      "item": [
+        {
+          "name": "List Agent Authorizations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var records = json.value || json.data || (Array.isArray(json) ? json : []);",
+                  "        pm.test(`Agent auth record count: ${records.length}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations"
+              ]
+            },
+            "description": "Returns all agent authorization records for the project. Restricted to Project Owner.\n\nOperation ID: `List_Agent_Authorizations`"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Agent Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-kpmg-charge-code",
+                "value": "{{chargeCode}}",
+                "type": "text"
+              },
+              {
+                "key": "x-kpmg-region-override",
+                "value": "{{regionOverride}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AgentID\": \"asst_YwtJ2dU7EfiezLfWPfbO0oWX\",\n  \"AgentName\": \"retest-5270\",\n  \"AgentStatus\": \"Active\",\n  \"AgentOwner\": \"go-cld-samundic@kpmgqa.com\",\n  \"User\": \"go-cld-sunidhinema@kpmgqa.com\",\n  \"CreateAgent\": \"Yes\",\n  \"ReadAgent\": \"Yes\",\n  \"UpdateAgent\": \"Yes\",\n  \"DeleteAgent\": \"No\",\n  \"CreateThread\": \"Yes\",\n  \"CreateRun\": \"Yes\",\n  \"UpdateRun\": \"Yes\",\n  \"ReadThread\": \"Yes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations?projectId={{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "{{projectId}}"
+                }
+              ]
+            },
+            "description": "Creates an AgentAuthorization record.\n\nRequired: AgentID, AgentName, AgentStatus (Active|Contained|Deleted), AgentOwner\n\nOptional principal (mutually exclusive): User, SecurityGroupName, AppID\n\nPermissions (each Yes|No): CreateAgent, ReadAgent, UpdateAgent, DeleteAgent, CreateThread, CreateRun, UpdateRun, ReadThread\n\nSharing: ShareStatus (Yes|No), ShareWith (semicolon-separated emails)\n\nOperation ID: `Create_Agent_Authorization`"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AgentStatus\": \"Active\",\n  \"CreateAgent\": \"Yes\",\n  \"ReadAgent\": \"Yes\",\n  \"UpdateAgent\": \"Yes\",\n  \"DeleteAgent\": \"No\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations/{{agentId}}/{{agentAuthRecordName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations",
+                "{{agentId}}",
+                "{{agentAuthRecordName}}"
+              ]
+            },
+            "description": "Updates an existing AgentAuthorization record.\n\nMutable: AgentStatus (Active|Contained|Deleted), permission fields (Yes|No): CreateAgent, ReadAgent, UpdateAgent, DeleteAgent, CreateThread, CreateRun, UpdateRun, ReadThread, ShareStatus, ShareWith\n\nImmutable (400 if included): AgentID, AgentName, AgentOwner, AppID, SecurityGroupName, CreatedBy, CreatedDate\n\nOperation ID: `Update_Agent_Authorization`"
+          },
+          "response": []
+        },
+        {
+          "name": "Contain Agent (Set AgentStatus to Contained)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AgentStatus\": \"Contained\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations/{{agentId}}/{{agentAuthRecordName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations",
+                "{{agentId}}",
+                "{{agentAuthRecordName}}"
+              ]
+            },
+            "description": "Sets AgentStatus to Contained. The containment-check policy blocks ALL operations on the agent with 403 Forbidden regardless of individual permission fields.\n\nRestore access by setting AgentStatus back to Active."
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Agent (Set AgentStatus to Deleted)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AgentStatus\": \"Deleted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations/{{agentId}}/{{agentAuthRecordName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations",
+                "{{agentId}}",
+                "{{agentAuthRecordName}}"
+              ]
+            },
+            "description": "Soft-deletes an agent by setting AgentStatus to Deleted. The containment-check policy treats Deleted identically to Contained — all operations return 403 Forbidden."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Agent Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-authorizations/{{agentId}}/{{agentAuthRecordName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-authorizations",
+                "{{agentId}}",
+                "{{agentAuthRecordName}}"
+              ]
+            },
+            "description": "Permanently deletes an AgentAuthorization record. The deletion is logged to VersionHistory.\n\nOperation ID: `Delete_Agent_Authorization`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Manage agent authorization records controlling per-agent permissions.\n\nCaller must be the Project Owner, Agent Owner, or have `UpdateAgent` permission.\n\nRequired fields for Create: `AgentID`, `AgentName`, `AgentOwner`\nAllowed `AgentStatus` values: `Active`, `Contained`, `Deleted`\nRecord name format: agent-level RowKey (e.g. `WB-AGENT-0001`)"
+    },
+    {
+      "name": "Agent Mappings (Admin)",
+      "item": [
+        {
+          "name": "Mutate Agent Mappings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"add\": [\"{{agentId}}\"],\n  \"remove\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/agent-mappings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "agent-mappings"
+              ]
+            },
+            "description": "Performs bulk add/remove operations on the agent mappings for a project authorization.\n\nOperation ID: `Mutate_Agent_Mappings`"
+          },
+          "response": []
+        }
+      ],
+      "description": "Bulk mutation of agent mappings within a project authorization."
+    },
+    {
+      "name": "Version History",
+      "item": [
+        {
+          "name": "List Project Version History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var entries = json.value || json.data || (Array.isArray(json) ? json : []);",
+                  "        pm.test(`History entries returned: ${entries.length}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/version-history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "version-history"
+              ],
+              "query": [
+                {
+                  "key": "$top",
+                  "value": "50",
+                  "description": "Max records to return (default 50, max 1000)",
+                  "disabled": true
+                },
+                {
+                  "key": "agentId",
+                  "value": "",
+                  "description": "Omit for project-level history",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieves the project authorization version history audit log. Omit `agentId` to get project-level history.\n\nOperation ID: `List_Version_History`"
+          },
+          "response": []
+        },
+        {
+          "name": "List Agent Version History",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(`Status ${pm.response.code}`, () => pm.response.to.have.status(pm.response.code));",
+                  "if (pm.response.code === 200) {",
+                  "    try {",
+                  "        var json = pm.response.json();",
+                  "        var entries = json.value || json.data || (Array.isArray(json) ? json : []);",
+                  "        pm.test(`Agent history entries returned: ${entries.length}`, () => true);",
+                  "    } catch(e) {}",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/{{projectId}}/version-history?agentId={{agentId}}&$top=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{projectId}}",
+                "version-history"
+              ],
+              "query": [
+                {
+                  "key": "agentId",
+                  "value": "{{agentId}}",
+                  "description": "Agent ID to retrieve history for"
+                },
+                {
+                  "key": "$top",
+                  "value": "50",
+                  "description": "Max records to return (default 50, max 1000)"
+                }
+              ]
+            },
+            "description": "Retrieves the version history audit log specifically for a given agent authorization.\n\nOperation ID: `List_Version_History` (with agentId)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Audit trail for project and agent authorization changes (AC5).\nUse `agentId` query param to retrieve agent-level history; omit to retrieve project-level history."
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "grant_type",
+        "value": "implicit",
+        "type": "string"
+      },
+      {
+        "key": "authUrl",
+        "value": "https://login.microsoftonline.com/{{tenantId}}/oauth2/v2.0/authorize",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "{{clientId}}",
+        "type": "string"
+      },
+      {
+        "key": "refreshRequestParams",
+        "value": [],
+        "type": "any"
+      },
+      {
+        "key": "tokenRequestParams",
+        "value": [],
+        "type": "any"
+      },
+      {
+        "key": "authRequestParams",
+        "value": [],
+        "type": "any"
+      },
+      {
+        "key": "tokenName",
+        "value": "Azure 12345",
+        "type": "string"
+      },
+      {
+        "key": "challengeAlgorithm",
+        "value": "S256",
+        "type": "string"
+      },
+      {
+        "key": "useBrowser",
+        "value": true,
+        "type": "boolean"
+      },
+      {
+        "key": "scope",
+        "value": "{{scope}}",
+        "type": "string"
+      },
+      {
+        "key": "clientSecret",
+        "value": "{{client_secret}}",
+        "type": "string"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      },
+      {
+        "key": "client_authentication",
+        "value": "body",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          "// Inject required headers on every request",
+          "const chargeCode = pm.collectionVariables.get('chargeCode') || pm.environment.get('chargeCode') || '1';",
+          "pm.request.headers.upsert({ key: 'x-kpmg-charge-code', value: chargeCode });",
+          "",
+          "const regionOverride = pm.collectionVariables.get('regionOverride') || pm.environment.get('regionOverride') || 'australiaeast';",
+          "pm.request.headers.upsert({ key: 'x-kpmg-region-override', value: regionOverride });",
+          "",
+          "const bearerToken = pm.collectionVariables.get('bearerToken') || pm.environment.get('bearerToken');",
+          "if (bearerToken) {",
+          "    pm.request.headers.upsert({ key: 'Authorization', value: 'Bearer ' + bearerToken });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "requests": {},
+        "exec": [
+          "console.log(`[${pm.info.requestName}] ${pm.response.status} (${pm.response.responseTime}ms)`);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://api.qa.workbench.kpmg/api/projects"
+    },
+    {
+      "key": "chargeCode",
+      "value": "1"
+    },
+    {
+      "key": "regionOverride",
+      "value": "australiaeast"
+    },
+    {
+      "key": "apiVersion",
+      "value": "2025-05-15-preview"
+    },
+    {
+      "key": "projectId",
+      "value": "aif-prj-wb-apac-aue-qa"
+    },
+    {
+      "key": "tenantId",
+      "value": "38aab37e-88cc-4b73-9098-cbebfcd5960d"
+    },
+    {
+      "key": "clientId",
+      "value": "f67c8187-376c-4fb3-b7dd-d76b558dfd01"
+    },
+    {
+      "key": "scope",
+      "value": "f67c8187-376c-4fb3-b7dd-d76b558dfd01/.default"
+    },
+    {
+      "key": "agentId",
+      "value": "asst_7xh0b3FpghEr3mr4NEusRwEL"
+    },
+    {
+      "key": "projectAuthName",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": "run_X6TK43FQnTJ6dGIqHFmO4vKP"
+    },
+    {
+      "key": "vectorStoreId",
+      "value": ""
+    },
+    {
+      "key": "messageId",
+      "value": ""
+    },
+    {
+      "key": "threadId",
+      "value": "thread_HY3zGnJiKfmP3YA37F9q408C"
+    },
+    {
+      "key": "client_secret",
+      "value": ""
+    },
+    {
+      "key": "tenant_id",
+      "value": ""
+    },
+    {
+      "key": "client_id",
+      "value": ""
+    }
+  ]
+}
