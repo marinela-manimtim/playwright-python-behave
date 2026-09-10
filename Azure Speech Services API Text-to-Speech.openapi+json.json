@@ -1,0 +1,906 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Azure Speech Services API Text-to-Speech",
+        "description": "Azure Speech Services API Text-to-Speech version 2024-04-01.",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://apim-hub-wb-apac-aue-qa.azure-api.net/genai/azure/speech/texttospeech"
+        }
+    ],
+    "paths": {
+        "/batchsyntheses/{id}": {
+            "get": {
+                "tags": [
+                    "BatchSynthesis"
+                ],
+                "summary": "Gets the batch synthesis identified by the given ID.",
+                "description": "Gets the batch synthesis identified by the given ID.",
+                "operationId": "BatchSyntheses_Get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The id of resource.",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 64,
+                            "minLength": 3,
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "description": "The API version to use for this operation.",
+                        "required": true,
+                        "schema": {
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BatchSynthesis"
+                                },
+                                "example": {
+                                    "inputKind": "PlainText",
+                                    "inputs": [
+                                        {
+                                            "content": "string"
+                                        }
+                                    ],
+                                    "synthesisConfig": {
+                                        "voice": "string",
+                                        "style": "string",
+                                        "rate": "string",
+                                        "pitch": "string",
+                                        "volume": "string",
+                                        "backgroundAudio": {
+                                            "src": "string",
+                                            "fadein": 0,
+                                            "fadeout": 0,
+                                            "volume": 0
+                                        }
+                                    },
+                                    "customVoices": {},
+                                    "properties": {
+                                        "timeToLiveInHours": 0,
+                                        "outputFormat": "string",
+                                        "concatenateResult": true,
+                                        "decompressOutputFiles": true,
+                                        "wordBoundaryEnabled": true,
+                                        "sentenceBoundaryEnabled": true,
+                                        "destinationContainerUrl": "string",
+                                        "destinationPath": "string",
+                                        "sizeInBytes": 0,
+                                        "succeededAudioCount": 0,
+                                        "failedAudioCount": 0,
+                                        "durationInMilliseconds": 0,
+                                        "billingDetails": {
+                                            "neuralCharacters": 0,
+                                            "customNeuralCharacters": 0,
+                                            "aoaiCharacters": 0,
+                                            "aoaiHDCharacters": 0,
+                                            "personalVoiceCharacters": 0
+                                        },
+                                        "error": {
+                                            "code": "string",
+                                            "message": "string"
+                                        }
+                                    },
+                                    "outputs": {
+                                        "result": "string",
+                                        "summary": "string"
+                                    },
+                                    "status": "NotStarted",
+                                    "lastActionDateTime": "string",
+                                    "id": "string",
+                                    "description": "string",
+                                    "createdDateTime": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "An error occurred.",
+                        "headers": {
+                            "x-ms-error-code": {
+                                "description": "Error code",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "BatchSynthesis"
+                ],
+                "summary": "Creates a batch synthesis job, the max allowed payload content length is 2 megabytes.",
+                "description": "Creates a batch synthesis job, the max allowed payload content length is 2 megabytes.",
+                "operationId": "BatchSyntheses_Create",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The id of resource.",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 64,
+                            "minLength": 3,
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "description": "The API version to use for this operation.",
+                        "required": true,
+                        "schema": {
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Operation-Id",
+                        "in": "header",
+                        "description": "ID of the status monitor for the operation. If the Operation-Id header matches an existing operation and the request is not identical to the prior request, it will fail with a 400 Bad Request.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Bath synthesis task definition",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BatchSynthesis"
+                            },
+                            "example": {
+                                "inputKind": "PlainText",
+                                "inputs": [
+                                    {
+                                        "content": "string"
+                                    }
+                                ],
+                                "synthesisConfig": {
+                                    "voice": "string",
+                                    "style": "string",
+                                    "rate": "string",
+                                    "pitch": "string",
+                                    "volume": "string",
+                                    "backgroundAudio": {
+                                        "src": "string",
+                                        "fadein": 0,
+                                        "fadeout": 0,
+                                        "volume": 0
+                                    }
+                                },
+                                "customVoices": {},
+                                "properties": {
+                                    "timeToLiveInHours": 0,
+                                    "outputFormat": "string",
+                                    "concatenateResult": true,
+                                    "decompressOutputFiles": true,
+                                    "wordBoundaryEnabled": true,
+                                    "sentenceBoundaryEnabled": true,
+                                    "destinationContainerUrl": "string",
+                                    "destinationPath": "string",
+                                    "sizeInBytes": 0,
+                                    "succeededAudioCount": 0,
+                                    "failedAudioCount": 0,
+                                    "durationInMilliseconds": 0,
+                                    "billingDetails": {
+                                        "neuralCharacters": 0,
+                                        "customNeuralCharacters": 0,
+                                        "aoaiCharacters": 0,
+                                        "aoaiHDCharacters": 0,
+                                        "personalVoiceCharacters": 0
+                                    },
+                                    "error": {
+                                        "code": "string",
+                                        "message": "string"
+                                    }
+                                },
+                                "outputs": {
+                                    "result": "string",
+                                    "summary": "string"
+                                },
+                                "status": "NotStarted",
+                                "lastActionDateTime": "string",
+                                "id": "string",
+                                "description": "string",
+                                "createdDateTime": "string"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "headers": {
+                            "operation-id": {
+                                "description": "ID of the operation.",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "operation-location": {
+                                "description": "The location of the batch synthesis job.",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BatchSynthesis"
+                                },
+                                "example": {
+                                    "inputKind": "PlainText",
+                                    "inputs": [
+                                        {
+                                            "content": "string"
+                                        }
+                                    ],
+                                    "synthesisConfig": {
+                                        "voice": "string",
+                                        "style": "string",
+                                        "rate": "string",
+                                        "pitch": "string",
+                                        "volume": "string",
+                                        "backgroundAudio": {
+                                            "src": "string",
+                                            "fadein": 0,
+                                            "fadeout": 0,
+                                            "volume": 0
+                                        }
+                                    },
+                                    "customVoices": {},
+                                    "properties": {
+                                        "timeToLiveInHours": 0,
+                                        "outputFormat": "string",
+                                        "concatenateResult": true,
+                                        "decompressOutputFiles": true,
+                                        "wordBoundaryEnabled": true,
+                                        "sentenceBoundaryEnabled": true,
+                                        "destinationContainerUrl": "string",
+                                        "destinationPath": "string",
+                                        "sizeInBytes": 0,
+                                        "succeededAudioCount": 0,
+                                        "failedAudioCount": 0,
+                                        "durationInMilliseconds": 0,
+                                        "billingDetails": {
+                                            "neuralCharacters": 0,
+                                            "customNeuralCharacters": 0,
+                                            "aoaiCharacters": 0,
+                                            "aoaiHDCharacters": 0,
+                                            "personalVoiceCharacters": 0
+                                        },
+                                        "error": {
+                                            "code": "string",
+                                            "message": "string"
+                                        }
+                                    },
+                                    "outputs": {
+                                        "result": "string",
+                                        "summary": "string"
+                                    },
+                                    "status": "NotStarted",
+                                    "lastActionDateTime": "string",
+                                    "id": "string",
+                                    "description": "string",
+                                    "createdDateTime": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "An error occurred.",
+                        "headers": {
+                            "x-ms-error-code": {
+                                "description": "Error code",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "BatchSynthesis"
+                ],
+                "summary": "Deletes the batch synthesis identified by the given ID.",
+                "description": "Deletes the batch synthesis identified by the given ID.",
+                "operationId": "BatchSyntheses_Delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The id of resource.",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 64,
+                            "minLength": 3,
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "api-version",
+                        "in": "query",
+                        "description": "The API version to use for this operation.",
+                        "required": true,
+                        "schema": {
+                            "minLength": 1,
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "content": {
+                            "application/json": {}
+                        }
+                    },
+                    "500": {
+                        "description": "An error occurred.",
+                        "headers": {
+                            "x-ms-error-code": {
+                                "description": "Error code",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "post": {
+                "summary": "Submit Text-to-Speech",
+                "description": "Submit Text-to-Speech",
+                "operationId": "Submit_TextToSpeech",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Content-Type",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "enum": [
+                                "application/ssml+xml"
+                            ],
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Microsoft-OutputFormat",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "User-Agent",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "BatchSynthesis": {
+                "required": [
+                    "inputKind"
+                ],
+                "type": "object",
+                "properties": {
+                    "inputKind": {
+                        "$ref": "#/components/schemas/InputKind"
+                    },
+                    "inputs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BatchSynthesisInput"
+                        },
+                        "description": "Text or SSML inputs, it's allowed up to 10000 items."
+                    },
+                    "synthesisConfig": {
+                        "$ref": "#/components/schemas/BatchSynthesisConfig"
+                    },
+                    "customVoices": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "maxLength": 64,
+                            "minLength": 3,
+                            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                            "type": "string"
+                        },
+                        "description": "The custom voice map of voice name and deployment ID."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BatchSynthesisProperties"
+                    },
+                    "outputs": {
+                        "$ref": "#/components/schemas/BatchSynthesisOutputs"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/Status"
+                    },
+                    "lastActionDateTime": {
+                        "type": "string",
+                        "description": "The time-stamp when the current status was entered.",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "id": {
+                        "$ref": "#/components/schemas/ResourceId"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The description of the batch synthesis task."
+                    },
+                    "createdDateTime": {
+                        "type": "string",
+                        "description": "The time-stamp when the object was created.",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "description": "Bath synthesis task."
+            },
+            "BatchSynthesisBackgroundAudioDefinition": {
+                "required": [
+                    "src"
+                ],
+                "type": "object",
+                "properties": {
+                    "src": {
+                        "type": "string",
+                        "description": "Source of audio file. Reference https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#add-background-audio.",
+                        "format": "uri"
+                    },
+                    "fadein": {
+                        "type": "integer",
+                        "description": "The fadein value of background audio. Reference https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#add-background-audio.",
+                        "format": "int64"
+                    },
+                    "fadeout": {
+                        "type": "integer",
+                        "description": "The fadeout value of background audio. Reference https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#add-background-audio.",
+                        "format": "int64"
+                    },
+                    "volume": {
+                        "type": "number",
+                        "description": "The volume value of background audio. Reference https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#add-background-audio.",
+                        "format": "double"
+                    }
+                },
+                "description": "Background audio setting."
+            },
+            "BatchSynthesisBillingDetails": {
+                "type": "object",
+                "properties": {
+                    "neuralCharacters": {
+                        "type": "integer",
+                        "description": "The number of billable characters for prebuilt neural voices in the input file.",
+                        "format": "int64"
+                    },
+                    "customNeuralCharacters": {
+                        "type": "integer",
+                        "description": "The number of billable characters for custom neural voices in the input file.",
+                        "format": "int64"
+                    },
+                    "aoaiCharacters": {
+                        "type": "integer",
+                        "description": "The number of billable characters for AOAI voices in the input file.",
+                        "format": "int64"
+                    },
+                    "aoaiHDCharacters": {
+                        "type": "integer",
+                        "description": "The number of billable characters for AOAI HD voices in the input file.",
+                        "format": "int64"
+                    },
+                    "personalVoiceCharacters": {
+                        "type": "integer",
+                        "description": "The number of billable characters for personal voices in the input file.",
+                        "format": "int64"
+                    }
+                },
+                "description": "Bath synthesis billing details."
+            },
+            "BatchSynthesisConfig": {
+                "required": [
+                    "voice"
+                ],
+                "type": "object",
+                "properties": {
+                    "voice": {
+                        "minLength": 1,
+                        "type": "string",
+                        "description": "Voice name for PlainText input. You can find platform voice list here https://learn.microsoft.com/azure/ai-services/speech-service/language-support?tabs=tts."
+                    },
+                    "style": {
+                        "type": "string",
+                        "description": "Style name for PlainText input."
+                    },
+                    "rate": {
+                        "type": "string",
+                        "description": "Speaking rate for PlainText input. For supported values, see https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-prosody."
+                    },
+                    "pitch": {
+                        "type": "string",
+                        "description": "Pitch for PlainText input. For supported values, see https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-prosody."
+                    },
+                    "volume": {
+                        "type": "string",
+                        "description": "Volume for PlainText input. For supported values, see https://learn.microsoft.com/azure/ai-services/speech-service/speech-synthesis-markup-voice#adjust-prosody."
+                    },
+                    "backgroundAudio": {
+                        "$ref": "#/components/schemas/BatchSynthesisBackgroundAudioDefinition"
+                    }
+                },
+                "description": "Text-to-speech configuration for plain text input."
+            },
+            "BatchSynthesisError": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "Top level error code"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Error message"
+                    }
+                },
+                "description": "Batch Synthesis Error."
+            },
+            "BatchSynthesisInput": {
+                "required": [
+                    "content"
+                ],
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "minLength": 1,
+                        "type": "string",
+                        "description": "It could be SSML or plain text."
+                    }
+                },
+                "description": "Batch Synthesis input."
+            },
+            "BatchSynthesisOutputs": {
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "type": "string",
+                        "description": "sas url of the result file. It would be relative path when \"destinationContainerUrl\" is specified."
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "When BatchSynthesisProperties.decompressOutputFiles is true, job summary file path will be provided here."
+                    }
+                },
+                "description": "Batch Synthesis output."
+            },
+            "BatchSynthesisProperties": {
+                "type": "object",
+                "properties": {
+                    "timeToLiveInHours": {
+                        "type": "integer",
+                        "description": "How long the batch task will be kept in the system after it has completed. Once the batch task reaches the time to live after completion (succeeded or failed) it will be automatically deleted. The longest supported duration is 744 hours (31 days). The default value is 744 hours. ",
+                        "format": "int32"
+                    },
+                    "outputFormat": {
+                        "type": "string",
+                        "description": "The requested audio output format. Reference https://learn.microsoft.com/azure/ai-services/speech-service/batch-synthesis-properties#batch-synthesis-properties."
+                    },
+                    "concatenateResult": {
+                        "type": "boolean",
+                        "description": "Whether synthesis result is concatenated."
+                    },
+                    "decompressOutputFiles": {
+                        "type": "boolean",
+                        "description": "Whether synthesis result is decompressed in target container. It only take effect when \"destinationContainerUrl\" is specified or \"BYOS\" is configured."
+                    },
+                    "wordBoundaryEnabled": {
+                        "type": "boolean",
+                        "description": "Whether the word boundary output will be generated."
+                    },
+                    "sentenceBoundaryEnabled": {
+                        "type": "boolean",
+                        "description": "Whether the sentence boundary output will be generated."
+                    },
+                    "destinationContainerUrl": {
+                        "type": "string",
+                        "description": "The requested destination container. It is an URL with Service adhoc SAS to a writeable container in Azure Blob storage.",
+                        "format": "uri"
+                    },
+                    "destinationPath": {
+                        "type": "string",
+                        "description": "The destination path in destination container, default to null, it only works when \"DestinationContainerUrl\" is specified, the final path prefix of outputs should be {DestinationPath}/{TaskId}/, or {TaskId} if not specified."
+                    },
+                    "sizeInBytes": {
+                        "type": "integer",
+                        "description": "The generated audio size in bytes.",
+                        "format": "int64",
+                        "readOnly": true
+                    },
+                    "succeededAudioCount": {
+                        "type": "integer",
+                        "description": "The number of succeeded audios.",
+                        "format": "int32",
+                        "readOnly": true
+                    },
+                    "failedAudioCount": {
+                        "type": "integer",
+                        "description": "The number of failed audios.",
+                        "format": "int32",
+                        "readOnly": true
+                    },
+                    "durationInMilliseconds": {
+                        "type": "integer",
+                        "description": "The generated audio duration in milliseconds.",
+                        "format": "int32",
+                        "readOnly": true
+                    },
+                    "billingDetails": {
+                        "$ref": "#/components/schemas/BatchSynthesisBillingDetails"
+                    },
+                    "error": {
+                        "$ref": "#/components/schemas/BatchSynthesisError"
+                    }
+                },
+                "description": "Detailed properties of batch synthesis task."
+            },
+            "Error": {
+                "required": [
+                    "code",
+                    "message"
+                ],
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "$ref": "#/components/schemas/ErrorCode"
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "The source of the error."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "High level error message."
+                    },
+                    "details": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Error"
+                        },
+                        "description": "Additional supportive details regarding the error and/or expected policies."
+                    },
+                    "innererror": {
+                        "$ref": "#/components/schemas/InnerError"
+                    }
+                },
+                "description": "The error object."
+            },
+            "ErrorCode": {
+                "enum": [
+                    "BadRequest",
+                    "BadArgument",
+                    "Unauthorized",
+                    "Forbidden",
+                    "NotFound",
+                    "UnsupportedMediaType",
+                    "TooManyRequests",
+                    "InternalServerError",
+                    "ServiceUnavailable"
+                ],
+                "type": "string",
+                "description": "Top-level error code",
+                "x-ms-enum": {
+                    "name": "ErrorCode",
+                    "modelAsString": true
+                }
+            },
+            "ErrorResponse": {
+                "required": [
+                    "error"
+                ],
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "$ref": "#/components/schemas/Error"
+                    }
+                },
+                "description": "Error response."
+            },
+            "InnerError": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "Detailed error code to help diagnostic."
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "The source of the error."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Detailed error message."
+                    },
+                    "innererror": {
+                        "$ref": "#/components/schemas/InnerError"
+                    }
+                },
+                "description": "An object containing more specific information about the error."
+            },
+            "OperationId": {
+                "maxLength": 64,
+                "minLength": 3,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                "type": "string",
+                "description": "Unique operation ID."
+            },
+            "Operation": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/OperationId"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/OperationStatus"
+                    }
+                },
+                "description": "Status of a long running operation."
+            },
+            "OperationStatus": {
+                "enum": [
+                    "NotStarted",
+                    "Running",
+                    "Succeeded",
+                    "Failed"
+                ],
+                "type": "string",
+                "description": "Status of an operation.",
+                "x-ms-enum": {
+                    "name": "OperationStatus",
+                    "modelAsString": true
+                }
+            },
+            "PaginatedBatchSynthesis": {
+                "required": [
+                    "value"
+                ],
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/BatchSynthesis"
+                        },
+                        "description": "Bath synthesis tasks."
+                    },
+                    "nextLink": {
+                        "type": "string",
+                        "description": "Link to next page.",
+                        "format": "uri"
+                    }
+                },
+                "description": "Paginated batch synthesis task list"
+            },
+            "ResourceId": {
+                "maxLength": 64,
+                "minLength": 3,
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{1,62}[a-zA-Z0-9]$",
+                "type": "string",
+                "description": "Resource id"
+            },
+            "Status": {
+                "enum": [
+                    "NotStarted",
+                    "Running",
+                    "Succeeded",
+                    "Failed"
+                ],
+                "type": "string",
+                "description": "Status of a resource.",
+                "x-ms-enum": {
+                    "name": "Status",
+                    "modelAsString": true
+                }
+            },
+            "InputKind": {
+                "enum": [
+                    "PlainText",
+                    "SSML"
+                ],
+                "type": "string",
+                "description": "Input text kind.",
+                "x-ms-enum": {
+                    "name": "InputKind",
+                    "modelAsString": true
+                }
+            }
+        },
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "Ocp-Apim-Subscription-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "subscription-key",
+                "in": "query"
+            }
+        }
+    },
+    "security": [
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "apiKeyQuery": []
+        }
+    ]
+}
